@@ -37,9 +37,11 @@ public class MetaObjectUtil {
 
     static {
         try {
-            Class<?> metaClass = Class.forName("org.apache.ibatis.reflection.SystemMetaObject");
+            // 高版本中的 MetaObject.forObject 有 4 个参数，低版本是 1 个
+            // 下面这个 MetaObjectWithReflectCache 带反射的缓存信息
+            Class<?> metaClass = Class.forName("com.github.pagehelper.util.MetaObjectWithReflectCache");
             method = metaClass.getDeclaredMethod("forObject", Object.class);
-        } catch (Exception e1) {
+        } catch (Throwable e1) {
             try {
                 Class<?> metaClass = Class.forName("org.apache.ibatis.reflection.MetaObject");
                 method = metaClass.getDeclaredMethod("forObject", Object.class);

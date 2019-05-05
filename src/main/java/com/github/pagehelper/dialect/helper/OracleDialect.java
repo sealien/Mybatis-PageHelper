@@ -24,18 +24,17 @@
 
 package com.github.pagehelper.dialect.helper;
 
-import com.github.pagehelper.Page;
-import com.github.pagehelper.dialect.AbstractHelperDialect;
-import com.github.pagehelper.util.MetaObjectUtil;
-import org.apache.ibatis.cache.CacheKey;
-import org.apache.ibatis.mapping.BoundSql;
-import org.apache.ibatis.mapping.MappedStatement;
-import org.apache.ibatis.mapping.ParameterMapping;
-import org.apache.ibatis.reflection.MetaObject;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.ibatis.cache.CacheKey;
+import org.apache.ibatis.mapping.BoundSql;
+import org.apache.ibatis.mapping.MappedStatement;
+
+import com.github.pagehelper.Page;
+import com.github.pagehelper.dialect.AbstractHelperDialect;
+import com.github.pagehelper.util.MetaObjectUtil;
 
 /**
  * @author liuzh
@@ -50,16 +49,7 @@ public class OracleDialect extends AbstractHelperDialect {
         pageKey.update(page.getEndRow());
         pageKey.update(page.getStartRow());
         //处理参数配置
-        if (boundSql.getParameterMappings() != null) {
-            List<ParameterMapping> newParameterMappings = new ArrayList<ParameterMapping>();
-            if (boundSql != null && boundSql.getParameterMappings() != null) {
-                newParameterMappings.addAll(boundSql.getParameterMappings());
-            }
-            newParameterMappings.add(new ParameterMapping.Builder(ms.getConfiguration(), PAGEPARAMETER_FIRST, Integer.class).build());
-            newParameterMappings.add(new ParameterMapping.Builder(ms.getConfiguration(), PAGEPARAMETER_SECOND, Integer.class).build());
-            MetaObject metaObject = MetaObjectUtil.forObject(boundSql);
-            metaObject.setValue("parameterMappings", newParameterMappings);
-        }
+        handleParameter(boundSql, ms);
         return paramMap;
     }
 
@@ -69,8 +59,8 @@ public class OracleDialect extends AbstractHelperDialect {
         sqlBuilder.append("SELECT * FROM ( ");
         sqlBuilder.append(" SELECT TMP_PAGE.*, ROWNUM ROW_ID FROM ( ");
         sqlBuilder.append(sql);
-        sqlBuilder.append(" ) TMP_PAGE WHERE ROWNUM <= ? ");
-        sqlBuilder.append(" ) WHERE ROW_ID > ? ");
+        sqlBuilder.append(" ) TMP_PAGE)");
+        sqlBuilder.append(" WHERE ROW_ID <= ? AND ROW_ID > ?");
         return sqlBuilder.toString();
     }
 

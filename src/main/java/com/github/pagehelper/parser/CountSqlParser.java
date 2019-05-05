@@ -24,16 +24,16 @@
 
 package com.github.pagehelper.parser;
 
-import com.github.pagehelper.PageException;
+import com.github.pagehelper.util.StringUtil;
 import net.sf.jsqlparser.expression.Alias;
+import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.Function;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.select.*;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 /**
  * sql解析类，提供更智能的count查询sql
@@ -44,9 +44,112 @@ public class CountSqlParser {
     public static final String KEEP_ORDERBY = "/*keep orderby*/";
     private static final Alias TABLE_ALIAS;
 
+    //<editor-fold desc="聚合函数">
+    private final Set<String> skipFunctions = Collections.synchronizedSet(new HashSet<String>());
+    private final Set<String> falseFunctions = Collections.synchronizedSet(new HashSet<String>());
+
+    /**
+     * 聚合函数，以下列函数开头的都认为是聚合函数
+     */
+    private static final Set<String> AGGREGATE_FUNCTIONS = new HashSet<String>(Arrays.asList(
+            ("APPROX_COUNT_DISTINCT," +
+            "ARRAY_AGG," +
+            "AVG," +
+            "BIT_" +
+            //"BIT_AND," +
+            //"BIT_OR," +
+            //"BIT_XOR," +
+            "BOOL_," +
+            //"BOOL_AND," +
+            //"BOOL_OR," +
+            "CHECKSUM_AGG," +
+            "COLLECT," +
+            "CORR," +
+            //"CORR_," +
+            //"CORRELATION," +
+            "COUNT," +
+            //"COUNT_BIG," +
+            "COVAR," +
+            //"COVAR_POP," +
+            //"COVAR_SAMP," +
+            //"COVARIANCE," +
+            //"COVARIANCE_SAMP," +
+            "CUME_DIST," +
+            "DENSE_RANK," +
+            "EVERY," +
+            "FIRST," +
+            "GROUP," +
+            //"GROUP_CONCAT," +
+            //"GROUP_ID," +
+            //"GROUPING," +
+            //"GROUPING," +
+            //"GROUPING_ID," +
+            "JSON_," +
+            //"JSON_AGG," +
+            //"JSON_ARRAYAGG," +
+            //"JSON_OBJECT_AGG," +
+            //"JSON_OBJECTAGG," +
+            //"JSONB_AGG," +
+            //"JSONB_OBJECT_AGG," +
+            "LAST," +
+            "LISTAGG," +
+            "MAX," +
+            "MEDIAN," +
+            "MIN," +
+            "PERCENT_," +
+            //"PERCENT_RANK," +
+            //"PERCENTILE_CONT," +
+            //"PERCENTILE_DISC," +
+            "RANK," +
+            "REGR_," +
+            "SELECTIVITY," +
+            "STATS_," +
+            //"STATS_BINOMIAL_TEST," +
+            //"STATS_CROSSTAB," +
+            //"STATS_F_TEST," +
+            //"STATS_KS_TEST," +
+            //"STATS_MODE," +
+            //"STATS_MW_TEST," +
+            //"STATS_ONE_WAY_ANOVA," +
+            //"STATS_T_TEST_*," +
+            //"STATS_WSR_TEST," +
+            "STD," +
+            //"STDDEV," +
+            //"STDDEV_POP," +
+            //"STDDEV_SAMP," +
+            //"STDDEV_SAMP," +
+            //"STDEV," +
+            //"STDEVP," +
+            "STRING_AGG," +
+            "SUM," +
+            "SYS_OP_ZONE_ID," +
+            "SYS_XMLAGG," +
+            "VAR," +
+            //"VAR_POP," +
+            //"VAR_SAMP," +
+            //"VARIANCE," +
+            //"VARIANCE_SAMP," +
+            //"VARP," +
+            "XMLAGG").split(",")));
+    //</editor-fold>
+
     static {
         TABLE_ALIAS = new Alias("table_count");
         TABLE_ALIAS.setUseAs(false);
+    }
+
+    /**
+     * 添加到聚合函数，可以是逗号隔开的多个函数前缀
+     *
+     * @param functions
+     */
+    public static void addAggregateFunctions(String functions){
+        if(StringUtil.isNotEmpty(functions)){
+            String[] funs = functions.split(",");
+            for (int i = 0; i < funs.length; i++) {
+                AGGREGATE_FUNCTIONS.add(funs[i].toUpperCase());
+            }
+        }
     }
 
     /**
@@ -167,8 +270,25 @@ public class CountSqlParser {
             }
             //如果查询列中包含函数，也不可以，函数可能会聚合列
             if (item instanceof SelectExpressionItem) {
-                if (((SelectExpressionItem) item).getExpression() instanceof Function) {
-                    return false;
+                Expression expression = ((SelectExpressionItem) item).getExpression();
+                if (expression instanceof Function) {
+                    String name = ((Function) expression).getName();
+                    if (name != null) {
+                        String NAME = name.toUpperCase();
+                        if(skipFunctions.contains(NAME)){
+                            //go on
+                        } else if(falseFunctions.contains(NAME)){
+                            return false;
+                        } else {
+                            for (String aggregateFunction : AGGREGATE_FUNCTIONS) {
+                                if(NAME.startsWith(aggregateFunction)){
+                                    falseFunctions.add(NAME);
+                                    return false;
+                                }
+                            }
+                            skipFunctions.add(NAME);
+                        }
+                    }
                 }
             }
         }
@@ -245,9 +365,11 @@ public class CountSqlParser {
     public void processFromItem(FromItem fromItem) {
         if (fromItem instanceof SubJoin) {
             SubJoin subJoin = (SubJoin) fromItem;
-            if (subJoin.getJoin() != null) {
-                if (subJoin.getJoin().getRightItem() != null) {
-                    processFromItem(subJoin.getJoin().getRightItem());
+            if (subJoin.getJoinList() != null && subJoin.getJoinList().size() > 0) {
+                for (Join join : subJoin.getJoinList()) {
+                    if (join.getRightItem() != null) {
+                        processFromItem(join.getRightItem());
+                    }
                 }
             }
             if (subJoin.getLeft() != null) {

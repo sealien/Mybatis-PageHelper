@@ -12,9 +12,9 @@
  
  - http://repo1.maven.org/maven2/com/github/pagehelper/pagehelper/
 
-由于使用了sql 解析工具，你还需要下载 jsqlparser.jar：  
+由于使用了sql 解析工具，你还需要下载 jsqlparser.jar(需要和PageHelper 依赖的版本一致) ：
 
- - http://repo1.maven.org/maven2/com/github/jsqlparser/jsqlparser/0.9.5/
+ - http://repo1.maven.org/maven2/com/github/jsqlparser/jsqlparser/
 
 #### 2). 使用 Maven  
   
@@ -110,6 +110,8 @@
 
 9. `closeConn`：默认值为 `true`。当使用运行时动态数据源或没有设置 `helperDialect` 属性自动获取数据库类型时，会自动获取一个数据库连接，
 通过该属性来设置是否关闭获取的这个连接，默认`true`关闭，设置为 `false` 后，不会关闭获取的连接，这个参数的设置要根据自己选择的数据源来决定。
+
+10. `aggregateFunctions`(5.1.5+)：默认为所有常见数据库的聚合函数，允许手动添加聚合函数（影响行数），所有以聚合函数开头的函数，在进行 count 转换时，会套一层。其他函数和列会被替换为 count(0)，其中count列可以自己配置。
 
 **重要提示：**
 

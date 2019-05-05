@@ -24,6 +24,7 @@
 
 package com.github.pagehelper.util;
 
+import com.github.pagehelper.IPage;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageException;
 import org.apache.ibatis.reflection.MetaObject;
@@ -67,12 +68,29 @@ public abstract class PageObjectUtil {
      * @return
      */
     public static <T> Page<T> getPageFromObject(Object params, boolean required) {
-        int pageNum;
-        int pageSize;
-        MetaObject paramsObject = null;
         if (params == null) {
             throw new PageException("无法获取分页查询参数!");
         }
+        if(params instanceof IPage){
+            IPage pageParams = (IPage) params;
+            Page page = null;
+            if(pageParams.getPageNum() != null && pageParams.getPageSize() != null){
+                page = new Page(pageParams.getPageNum(), pageParams.getPageSize());
+            }
+            if (StringUtil.isNotEmpty(pageParams.getOrderBy())) {
+                if(page != null){
+                    page.setOrderBy(pageParams.getOrderBy());
+                } else {
+                    page = new Page();
+                    page.setOrderBy(pageParams.getOrderBy());
+                    page.setOrderByOnly(true);
+                }
+            }
+            return page;
+        }
+        int pageNum;
+        int pageSize;
+        MetaObject paramsObject = null;
         if (hasRequest && requestClass.isAssignableFrom(params.getClass())) {
             try {
                 paramsObject = MetaObjectUtil.forObject(getParameterMap.invoke(params, new Object[]{}));
@@ -105,7 +123,7 @@ public abstract class PageObjectUtil {
             pageNum = Integer.parseInt(String.valueOf(_pageNum));
             pageSize = Integer.parseInt(String.valueOf(_pageSize));
         } catch (NumberFormatException e) {
-            throw new PageException("分页参数不是合法的数字类型!");
+            throw new PageException("分页参数不是合法的数字类型!", e);
         }
         Page page = new Page(pageNum, pageSize);
         //count查询

@@ -31,6 +31,7 @@ import com.github.pagehelper.dialect.AbstractHelperDialect;
 import com.github.pagehelper.dialect.ReplaceSql;
 import com.github.pagehelper.dialect.replace.RegexWithNolockReplaceSql;
 import com.github.pagehelper.dialect.replace.SimpleWithNolockReplaceSql;
+import com.github.pagehelper.parser.OrderByParser;
 import com.github.pagehelper.parser.SqlServerParser;
 import com.github.pagehelper.util.StringUtil;
 import org.apache.ibatis.cache.CacheKey;
@@ -89,6 +90,28 @@ public class SqlServerDialect extends AbstractHelperDialect {
         return cacheSql;
     }
 
+    /**
+     * 分页查询，pageHelper转换SQL时报错with(nolock)不识别的问题，
+     * 重写父类AbstractHelperDialect.getPageSql转换出错的方法。
+     * 1. this.replaceSql.replace(sql);先转换成假的表名
+     * 2. 然后进行SQL转换
+     * 3. this.replaceSql.restore(sql);最后再恢复成真的with(nolock)
+     */
+    @Override
+    public String getPageSql(MappedStatement ms, BoundSql boundSql, Object parameterObject, RowBounds rowBounds, CacheKey pageKey) {
+        String sql = boundSql.getSql();
+        Page page = this.getLocalPage();
+        String orderBy = page.getOrderBy();
+        if (StringUtil.isNotEmpty(orderBy)) {
+            pageKey.update(orderBy);
+            sql = this.replaceSql.replace(sql);
+            sql = OrderByParser.converToOrderBySql(sql, orderBy);
+            sql = this.replaceSql.restore(sql);
+        }
+
+        return page.isOrderByOnly() ? sql : this.getPageSql(sql, page, pageKey);
+    }
+
     @Override
     public void setProperties(Properties properties) {
         super.setProperties(properties);
@@ -102,7 +125,7 @@ public class SqlServerDialect extends AbstractHelperDialect {
                 this.replaceSql = (ReplaceSql) Class.forName(replaceSql).newInstance();
             } catch (Exception e) {
                 throw new RuntimeException("replaceSql 参数配置的值不符合要求，可选值为 simple 和 regex，或者是实现了 "
-                        + ReplaceSql.class.getCanonicalName() + " 接口的全限定类名");
+                        + ReplaceSql.class.getCanonicalName() + " 接口的全限定类名", e);
             }
         }
         String sqlCacheClass = properties.getProperty("sqlCacheClass");

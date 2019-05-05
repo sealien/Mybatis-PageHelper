@@ -76,6 +76,8 @@ public class PageAutoDialect {
         registerDialectAlias("derby", SqlServer2012Dialect.class);
         //达梦数据库,https://github.com/mybatis-book/book/issues/43
         registerDialectAlias("dm", OracleDialect.class);
+        //阿里云PPAS数据库,https://github.com/pagehelper/Mybatis-PageHelper/issues/281
+        registerDialectAlias("edb", OracleDialect.class);
     }
 
     //自动获取dialect,如果没有setProperties或setSqlUtilConfig，也可以正常进行
@@ -227,6 +229,12 @@ public class PageAutoDialect {
         String closeConn = properties.getProperty("closeConn");
         if (StringUtil.isNotEmpty(closeConn)) {
             this.closeConn = Boolean.parseBoolean(closeConn);
+        }
+        //使用 sqlserver2012 作为默认分页方式，这种情况在动态数据源时方便使用
+        String useSqlserver2012 = properties.getProperty("useSqlserver2012");
+        if (StringUtil.isNotEmpty(useSqlserver2012) && Boolean.parseBoolean(useSqlserver2012)) {
+            registerDialectAlias("sqlserver", SqlServer2012Dialect.class);
+            registerDialectAlias("sqlserver2008", SqlServerDialect.class);
         }
         String dialectAlias = properties.getProperty("dialectAlias");
         if (StringUtil.isNotEmpty(dialectAlias)) {

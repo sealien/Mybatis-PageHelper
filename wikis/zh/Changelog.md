@@ -1,5 +1,126 @@
 ## 更新日志
 
+### 5.1.8 - 2018-11-11
+
+- 解决 sqlserver 中 with(nolock) 的问题([#pr10](https://gitee.com/free/Mybatis_PageHelper/pulls/10)) by [lvshuyan](https://gitee.com/lvshuyan)
+
+### 5.1.7 - 2018-10-11
+
+- 增加对阿里云PPAS数据库的支持，自动识别edb，fixed #281
+
+### 5.1.6 - 2018-09-05
+
+- 增加参数 useSqlserver2012，设置为 true 后，使用 sqlserver2012(Dialect) 作为 SqlServer 数据库的默认分页方式，这种情况在动态数据源时方便使用。默认使用的低版本(05,08)分页方式。
+- 增加 IPage 接口，目前支持 mybatis 查询方法只有一个参数，并且参数实现 IPage 接口时，如果存在分页参数，就会自动进行分页查询。感谢 [moonfruit](https://github.com/moonfruit) 两年前的 issue。
+- 解决 HashSet 并发问题 fixed #276
+- 优化代码结构，精简拦截器代码
+
+### 5.1.5 - 2018-09-02
+
+- 优化代码，去掉没必要的校验(**by lenosp**)
+- 解决 pageKey 多处理一次的小问题 #268
+- 新增 gitee 提供的 javadoc 文档(https://apidoc.gitee.com/free/Mybatis_PageHelper)
+- 解决默认反射不带缓存的问题 fixed #275
+- 优化mysql ifnull函数导致分页性能问题 (**by miaogr**)（这个修改最终改成了下面的 `aggregateFunctions`）
+- jsqlparser 升级为 1.2 版本，和 1.0 有不兼容的情况，已经解决。 fixed 273
+- 去掉 PageInfo 中存在歧义的 g(s)etFirstPage 和 g(s)etLastPage 两个方法
+- 抛出排序时解析失败的异常 fixed #257
+- 解决 Spring `<bean>` 方式配置时，没有 `properties` 属性时的初始化问题 fixed #26
+- 修复Oracle分页会漏查数据的问题 (**by muyun12**)
+- 新增 `aggregateFunctions` 参数(`CountSqlParser`), 允许手动添加聚合函数（影响行数），所以以聚合函数开头的函数，在进行 count 转换时，会套一层。其他函数和列会被替换为 count(0),其中count列可以自己配置。
+
+增加 `aggregateFunctions` 参数后，和原先最大的区别是，如果存在 `select ifnull(xxx, yy) from table ...`，原先的 count 查询是
+`select count(0) from (select ifnull(xxx, yy) from table ...) temp_count`，现在会区别聚合函数，如果不是聚合函数，就会变成
+`select count(0) from table ...`。
+
+默认包含的聚合函数前缀如下：
+
+```java
+/**
+ * 聚合函数，以下列函数开头的都认为是聚合函数
+ */
+private static final Set<String> AGGREGATE_FUNCTIONS = new HashSet<String>(Arrays.asList(
+        ("APPROX_COUNT_DISTINCT," +
+        "ARRAY_AGG," +
+        "AVG," +
+        "BIT_" +
+        //"BIT_AND," +
+        //"BIT_OR," +
+        //"BIT_XOR," +
+        "BOOL_," +
+        //"BOOL_AND," +
+        //"BOOL_OR," +
+        "CHECKSUM_AGG," +
+        "COLLECT," +
+        "CORR," +
+        //"CORR_," +
+        //"CORRELATION," +
+        "COUNT," +
+        //"COUNT_BIG," +
+        "COVAR," +
+        //"COVAR_POP," +
+        //"COVAR_SAMP," +
+        //"COVARIANCE," +
+        //"COVARIANCE_SAMP," +
+        "CUME_DIST," +
+        "DENSE_RANK," +
+        "EVERY," +
+        "FIRST," +
+        "GROUP," +
+        //"GROUP_CONCAT," +
+        //"GROUP_ID," +
+        //"GROUPING," +
+        //"GROUPING," +
+        //"GROUPING_ID," +
+        "JSON_," +
+        //"JSON_AGG," +
+        //"JSON_ARRAYAGG," +
+        //"JSON_OBJECT_AGG," +
+        //"JSON_OBJECTAGG," +
+        //"JSONB_AGG," +
+        //"JSONB_OBJECT_AGG," +
+        "LAST," +
+        "LISTAGG," +
+        "MAX," +
+        "MEDIAN," +
+        "MIN," +
+        "PERCENT_," +
+        //"PERCENT_RANK," +
+        //"PERCENTILE_CONT," +
+        //"PERCENTILE_DISC," +
+        "RANK," +
+        "REGR_," +
+        "SELECTIVITY," +
+        "STATS_," +
+        //"STATS_BINOMIAL_TEST," +
+        //"STATS_CROSSTAB," +
+        //"STATS_F_TEST," +
+        //"STATS_KS_TEST," +
+        //"STATS_MODE," +
+        //"STATS_MW_TEST," +
+        //"STATS_ONE_WAY_ANOVA," +
+        //"STATS_T_TEST_*," +
+        //"STATS_WSR_TEST," +
+        "STD," +
+        //"STDDEV," +
+        //"STDDEV_POP," +
+        //"STDDEV_SAMP," +
+        //"STDDEV_SAMP," +
+        //"STDEV," +
+        //"STDEVP," +
+        "STRING_AGG," +
+        "SUM," +
+        "SYS_OP_ZONE_ID," +
+        "SYS_XMLAGG," +
+        "VAR," +
+        //"VAR_POP," +
+        //"VAR_SAMP," +
+        //"VARIANCE," +
+        //"VARIANCE_SAMP," +
+        //"VARP," +
+        "XMLAGG").split(",")));
+```
+
 ### 5.1.4 - 2018-04-22
 
 - 默认增加达梦数据库(dm)，可以自动根据 jdbcurl 使用Oracle方式进行分页。如果想换 SqlServer 可以参考 5.1.3 更新日志中的 `dialectAlias` 参数。

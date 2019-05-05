@@ -22,39 +22,33 @@
  * THE SOFTWARE.
  */
 
-package com.github.pagehelper.dialect.helper;
+package com.github.pagehelper.util;
 
-import com.github.pagehelper.Page;
-import org.apache.ibatis.cache.CacheKey;
-import org.apache.ibatis.mapping.BoundSql;
-import org.apache.ibatis.mapping.MappedStatement;
-
-import java.util.Map;
+import com.github.pagehelper.PageException;
+import org.apache.ibatis.reflection.DefaultReflectorFactory;
+import org.apache.ibatis.reflection.MetaObject;
+import org.apache.ibatis.reflection.ReflectorFactory;
+import org.apache.ibatis.reflection.factory.DefaultObjectFactory;
+import org.apache.ibatis.reflection.factory.ObjectFactory;
+import org.apache.ibatis.reflection.wrapper.DefaultObjectWrapperFactory;
+import org.apache.ibatis.reflection.wrapper.ObjectWrapperFactory;
 
 /**
+ * 反射带缓存，提高反射性能
+ *
  * @author liuzh
  */
-public class SqlServer2012Dialect extends SqlServerDialect {
+public class MetaObjectWithReflectCache {
+    public static final ObjectFactory DEFAULT_OBJECT_FACTORY = new DefaultObjectFactory();
+    public static final ObjectWrapperFactory DEFAULT_OBJECT_WRAPPER_FACTORY = new DefaultObjectWrapperFactory();
+    public static final ReflectorFactory DEFAULT_REFLECTOR_FACTORY = new DefaultReflectorFactory();
 
-    @Override
-    public Object processPageParameter(MappedStatement ms, Map<String, Object> paramMap, Page page, BoundSql boundSql, CacheKey pageKey) {
-        paramMap.put(PAGEPARAMETER_FIRST, page.getStartRow());
-        paramMap.put(PAGEPARAMETER_SECOND, page.getPageSize());
-        //处理pageKey
-        pageKey.update(page.getStartRow());
-        pageKey.update(page.getPageSize());
-        //处理参数配置
-        handleParameter(boundSql, ms);
-        return paramMap;
-    }
-
-    @Override
-    public String getPageSql(String sql, Page page, CacheKey pageKey) {
-        StringBuilder sqlBuilder = new StringBuilder(sql.length() + 64);
-        sqlBuilder.append(sql);
-        sqlBuilder.append(" OFFSET ? ROWS FETCH NEXT ? ROWS ONLY ");
-        pageKey.update(page.getPageSize());
-        return sqlBuilder.toString();
+    public static MetaObject forObject(Object object) {
+        try {
+            return MetaObject.forObject(object, DEFAULT_OBJECT_FACTORY, DEFAULT_OBJECT_WRAPPER_FACTORY, DEFAULT_REFLECTOR_FACTORY);
+        } catch (Exception e) {
+            throw new PageException(e);
+        }
     }
 
 }
