@@ -1,5 +1,139 @@
 ## Changelog
 
+### 5.1.11 - 2019-11-26
+
+- Added support for Shentong database **wangss**
+- Add support for HerdDB - support HerdDB, mostly like MySQL - auto detect HerdDB **Enrico Olivelli**
+- fix some typos and grammar issues **LHearen**
+
+### 5.1.10 - 2019-06-05
+
+In version *5.1.0 - 2017-08-28*. Added `ReplaceSql` interface for handling sqlServer with (nolock) problem,
+add the replaceSql parameters, the optional value is `simple` and `regex`, or to achieve the `ReplaceSql` interface
+fully qualified class name. The default value is `simple`, still using the original way to deal with,
+the new regex will be convert `with (nolock)` to `table_PAGEWITHNOLOCK`.
+
+This update only changes the default value from `simple` to `regex`, which can almost 100% solve the paging problem of sqlServer.
+
+The following are examples from two issue.
+
+#### issue [#76](https://github.com/pagehelper/pagehelper-spring-boot/issues/76)
+
+Original SQL：
+```sql
+SELECT *
+FROM
+forum_post_info a with(nolock)
+LEFT JOIN forum_carcase_tags as b with(nolock) on a.id = b.carcase_id where b.tag_id = 127
+```
+Converted Count SQL：
+```sql
+SELECT COUNT(0)
+FROM forum_post_info a WITH (NOLOCK)
+	LEFT JOIN forum_carcase_tags b WITH (NOLOCK) ON a.id = b.carcase_id
+WHERE b.tag_id = 127
+```
+Converted paging SQL：
+```sql
+SELECT TOP 10 *
+FROM (
+	SELECT ROW_NUMBER() OVER (ORDER BY RAND()) AS PAGE_ROW_NUMBER, *
+	FROM (
+		SELECT *
+		FROM forum_post_info a WITH (NOLOCK)
+			LEFT JOIN forum_carcase_tags b WITH (NOLOCK) ON a.id = b.carcase_id
+		WHERE b.tag_id = 127
+	) PAGE_TABLE_ALIAS
+) PAGE_TABLE_ALIAS
+WHERE PAGE_ROW_NUMBER > 1
+ORDER BY PAGE_ROW_NUMBER
+```
+
+#### issue [#398](https://github.com/pagehelper/Mybatis-PageHelper/issues/398)
+
+Original SQL：
+```sql
+Select AUS.ScheduleID, AUS.SystemID, AUS.ClinicID, AUS.DoctorID, AUS.ScheduleDate,
+	AUS.StartTime, AUS.EndTime, AUS.Status, AUS.BookBy, AUS.Note, AUS.Remark, AUS.SourceType, CM.CompanyName,
+	AU.UserName As DoctorName, AU.UserNumber As DoctorNumber, CC.CodeDesc As ClinicName, CD.Lat, CD.Lng,
+	CD.ContactTel, CD.Address, CR.ConsultationStatusID, CR.RegisterStatus,A1.CodeDesc as AreaLevel1, A2.CodeDesc as AreaLevel2
+	From ACM_User_Schedule AUS with(nolock)
+	Left Join Client_Register CR with(nolock) On AUS.BookBy=CR.ClientID And CR.SourceType='F' And AUS.ClientRegisterNum=CR.ClientRegisterNum
+	Inner Join ACM_User AU with(nolock) On AU.UserID = AUS.DoctorID
+	Inner Join Code_Clinic CC with(nolock) On AUS.ClinicID=CC.CodeID
+	Inner Join Clinic_Detail CD with(nolock) On CC.CodeID = CD.ClinicID
+	Inner Join Code_Area A1 with(nolock) On CD.AreaLevel1ID=A1.CodeID
+	Inner Join Code_Area A2 with(nolock) On CD.AreaLevel2ID=A2.CodeID
+	Inner Join Company_Master CM with(nolock) On CC.SystemID = CM.SystemID
+	Where BookBy=1
+```
+Converted Count SQL：
+```sql
+SELECT COUNT(0)
+FROM ACM_User_Schedule AUS WITH (NOLOCK)
+	LEFT JOIN Client_Register CR WITH (NOLOCK)
+	ON AUS.BookBy = CR.ClientID
+		AND CR.SourceType = 'F'
+		AND AUS.ClientRegisterNum = CR.ClientRegisterNum
+	INNER JOIN ACM_User AU WITH (NOLOCK) ON AU.UserID = AUS.DoctorID
+	INNER JOIN Code_Clinic CC WITH (NOLOCK) ON AUS.ClinicID = CC.CodeID
+	INNER JOIN Clinic_Detail CD WITH (NOLOCK) ON CC.CodeID = CD.ClinicID
+	INNER JOIN Code_Area A1 WITH (NOLOCK) ON CD.AreaLevel1ID = A1.CodeID
+	INNER JOIN Code_Area A2 WITH (NOLOCK) ON CD.AreaLevel2ID = A2.CodeID
+	INNER JOIN Company_Master CM WITH (NOLOCK) ON CC.SystemID = CM.SystemID
+WHERE BookBy = 1
+```
+Converted paging SQL：
+```sql
+SELECT TOP 10 ScheduleID, SystemID, ClinicID, DoctorID, ScheduleDate
+	, StartTime, EndTime, Status, BookBy, Note
+	, Remark, SourceType, CompanyName, DoctorName, DoctorNumber
+	, ClinicName, Lat, Lng, ContactTel, Address
+	, ConsultationStatusID, RegisterStatus, AreaLevel1, AreaLevel2
+FROM (
+	SELECT ROW_NUMBER() OVER (ORDER BY RAND()) AS PAGE_ROW_NUMBER, ScheduleID, SystemID, ClinicID, DoctorID
+		, ScheduleDate, StartTime, EndTime, Status, BookBy
+		, Note, Remark, SourceType, CompanyName, DoctorName
+		, DoctorNumber, ClinicName, Lat, Lng, ContactTel
+		, Address, ConsultationStatusID, RegisterStatus, AreaLevel1, AreaLevel2
+	FROM (
+		SELECT AUS.ScheduleID, AUS.SystemID, AUS.ClinicID, AUS.DoctorID, AUS.ScheduleDate
+			, AUS.StartTime, AUS.EndTime, AUS.Status, AUS.BookBy, AUS.Note
+			, AUS.Remark, AUS.SourceType, CM.CompanyName, AU.UserName AS DoctorName, AU.UserNumber AS DoctorNumber
+			, CC.CodeDesc AS ClinicName, CD.Lat, CD.Lng, CD.ContactTel, CD.Address
+			, CR.ConsultationStatusID, CR.RegisterStatus, A1.CodeDesc AS AreaLevel1, A2.CodeDesc AS AreaLevel2
+		FROM ACM_User_Schedule AUS WITH (NOLOCK)
+			LEFT JOIN Client_Register CR WITH (NOLOCK)
+			ON AUS.BookBy = CR.ClientID
+				AND CR.SourceType = 'F'
+				AND AUS.ClientRegisterNum = CR.ClientRegisterNum
+			INNER JOIN ACM_User AU WITH (NOLOCK) ON AU.UserID = AUS.DoctorID
+			INNER JOIN Code_Clinic CC WITH (NOLOCK) ON AUS.ClinicID = CC.CodeID
+			INNER JOIN Clinic_Detail CD WITH (NOLOCK) ON CC.CodeID = CD.ClinicID
+			INNER JOIN Code_Area A1 WITH (NOLOCK) ON CD.AreaLevel1ID = A1.CodeID
+			INNER JOIN Code_Area A2 WITH (NOLOCK) ON CD.AreaLevel2ID = A2.CodeID
+			INNER JOIN Company_Master CM WITH (NOLOCK) ON CC.SystemID = CM.SystemID
+		WHERE BookBy = 1
+	) PAGE_TABLE_ALIAS
+) PAGE_TABLE_ALIAS
+WHERE PAGE_ROW_NUMBER > 1
+ORDER BY PAGE_ROW_NUMBER
+```
+
+SQL is formatted by https://tool.oschina.net/codeformat/sql
+
+### 5.1.9 - 2019-05-29
+
+- Upgrade jsqlparser to 2.0, upgrade mybatis to 3.5.1. resolve compatibility issues.
+- Improve paging logic judgment. fixed #389
+- Solve MetaObject version compatibility issues. fixed #349
+- Processing order by output warning log when parsing fails, not throwing exception
+- Solve three problems that may cause countColumn to fail fixed #325
+- Add a comma with less BIT_ fixed #341
+- Handling invalid links in documents isea533
+- Document sample error. fixed #366
+- fixed #373 NPE problem
+
 ### 5.1.8 - 2018-11-11
 
 - Resolve the problem of `with(nolock)` in SQLServer ([#pr10](https://gitee.com/free/Mybatis_PageHelper/pulls/10)) by [lvshuyan](https://gitee.com/lvshuyan)
@@ -175,14 +309,14 @@ If there is no custom query, the query is still automatically created using the 
 
 For example, if there are two queries:
 ```xml
-<select id="selectLeftjoin" resultType="com.github.pagehelper.model.Country">
-    select a.id,b.countryname,a.countrycode from country a
-    left join country b on a.id = b.id
+<select id="selectLeftjoin" resultType="com.github.pagehelper.model.User">
+    select a.id,b.name,a.py from user a
+    left join user b on a.id = b.id
     order by a.id
 </select>
 <select id="selectLeftjoin_COUNT" resultType="Long">
-    select count(distinct a.id) from country a
-    left join country b on a.id = b.id
+    select count(distinct a.id) from user a
+    left join user b on a.id = b.id
 </select>
 ```
 The above `countSuffix` uses the default value of` _COUNT`, and the paging plugin will automatically get the query to `selectLeftjoin_COUNT`. This query needs to ensure that the result is correct.
@@ -193,13 +327,13 @@ Because the `selectLeftjoin_COUNT` method is invoked automatically, there is no 
 
 The above method to perform the portion of the output log is as follows：
 ```
-DEBUG [main] - ==>  Preparing: select count(distinct a.id) from country a left join country b on a.id = b.id 
+DEBUG [main] - ==>  Preparing: select count(distinct a.id) from user a left join user b on a.id = b.id
 DEBUG [main] - ==> Parameters: 
 TRACE [main] - <==    Columns: C1
 TRACE [main] - <==        Row: 183
 DEBUG [main] - <==      Total: 1
 DEBUG [main] - Cache Hit Ratio [com.github.pagehelper.mapper.CountryMapper]: 0.0
-DEBUG [main] - ==>  Preparing: select a.id,b.countryname,a.countrycode from country a left join country b on a.id = b.id order by a.id LIMIT 10 
+DEBUG [main] - ==>  Preparing: select a.id,b.name,a.py from user a left join user b on a.id = b.id order by a.id LIMIT 10
 DEBUG [main] - ==> Parameters: 
 TRACE [main] - <==    Columns: ID, COUNTRYNAME, COUNTRYCODE
 TRACE [main] - <==        Row: 1, Angola, AO

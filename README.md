@@ -2,24 +2,23 @@
 
 [![Build Status](https://travis-ci.org/pagehelper/Mybatis-PageHelper.svg?branch=master)](https://travis-ci.org/pagehelper/Mybatis-PageHelper)
 [![Maven central](https://maven-badges.herokuapp.com/maven-central/com.github.pagehelper/pagehelper/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.pagehelper/pagehelper)
-[![Dependency Status](https://www.versioneye.com/user/projects/5932123f22f278003c5f851e/badge.svg?style=flat)](https://www.versioneye.com/user/projects/5932123f22f278003c5f851e)
 
 [中文版文档](https://github.com/pagehelper/Mybatis-PageHelper/blob/master/README_zh.md)
 
 If you are using MyBatis, it is recommended to try this pagination plugin. 
-This must be the **Most Convenient** pagination plugin.
+This must be the **MOST CONVENIENT** pagination plugin.
 
-PageHelper support any complex single-table, multi-table queries.
-Some special cases please see the [**Important note**](https://github.com/pagehelper/Mybatis-PageHelper/blob/master/wikis/en/Important.md).
+PageHelper supports any complex single-table, multi-table queries.
+As to some special cases, please refer to the [**Important note**](https://github.com/pagehelper/Mybatis-PageHelper/blob/master/wikis/en/Important.md).
 
 Want to use PageHelper? 
-Please see [**How to use PageHelper**](https://github.com/pagehelper/Mybatis-PageHelper/blob/master/wikis/en/HowToUse.md).
+Please check out [**How to use PageHelper**](https://github.com/pagehelper/Mybatis-PageHelper/blob/master/wikis/en/HowToUse.md).
 
 ## New JavaDoc
 
 https://apidoc.gitee.com/free/Mybatis_PageHelper
 
-Method API: https://apidoc.gitee.com/free/Mybatis_PageHelper/com/github/pagehelper/page/PageMethod.html
+APIs: https://apidoc.gitee.com/free/Mybatis_PageHelper/com/github/pagehelper/page/PageMethod.html
 
 ## 新书《MyBatis 从入门到精通》
 
@@ -36,29 +35,37 @@ GitHub项目：https://github.com/mybatis-book/book
 
 PageHelper supports the following databases:
 
- 1. `Oracle`
- 2. `Mysql`
- 3. `MariaDB`
- 4. `SQLite`
- 5. `Hsqldb`
- 6. `PostgreSQL`
- 7. `DB2`
- 8. `SqlServer(2005,2008)`
- 9. `Informix`
- 10. `H2`
- 11. `SqlServer2012`
- 12. `Derby`
- 13. `Phoenix`
+1. `Oracle`
+2. `Mysql`
+3. `MariaDB`
+4. `SQLite`
+5. `Hsqldb`
+6. `PostgreSQL`
+7. `DB2`
+8. `SqlServer(2005,2008)`
+9. `Informix`
+10. `H2`
+11. `SqlServer2012`
+12. `Derby`
+13. `Phoenix`
+14. 达梦数据库(dm)
+15. 阿里云PPAS数据库
+16. 神通数据库
+17. HerdDB
+
+>The database list here is not updated in time, see details here [PageAutoDialect.java#L58](https://github.com/pagehelper/Mybatis-PageHelper/blob/master/src/main/java/com/github/pagehelper/page/PageAutoDialect.java#L58).
 
 ## Use [QueryInterceptor spec](https://github.com/pagehelper/Mybatis-PageHelper/blob/master/src/main/java/com/github/pagehelper/QueryInterceptor.java) 
 
 ## Installation
 
-To use PageHelper you just need to include the 
-[pagehelper-x.x.x.jar](http://repo1.maven.org/maven2/com/github/pagehelper/pagehelper/) 
-and [jsqlparser-0.9.5.jar](http://repo1.maven.org/maven2/com/github/jsqlparser/jsqlparser/0.9.5/) file in the classpath.
+To use PageHelper, you just need to include the 
+[pagehelper-x.y.z.jar](http://repo1.maven.org/maven2/com/github/pagehelper/pagehelper/)
+and [jsqlparser-x.y.z.jar](http://repo1.maven.org/maven2/com/github/jsqlparser/jsqlparser/) file in the classpath.
 
-If you are using Maven just add the following dependency to your pom.xml:
+>For version matching relation, please refer to the dependent version in pom.
+
+If you are using Maven, you could just add the following dependency to your `pom.xml`:
 
 ```xml  
 <dependency>
@@ -68,9 +75,9 @@ If you are using Maven just add the following dependency to your pom.xml:
 </dependency>
 ```  
 
-If you are using Spring Boot, You can refer to [pagehelper-spring-boot-starter](https://github.com/pagehelper/pagehelper-spring-boot)
+If you are using Spring Boot, You can refer to the [pagehelper-spring-boot-starter](https://github.com/pagehelper/pagehelper-spring-boot)
 
-[Read More...](https://github.com/pagehelper/Mybatis-PageHelper/blob/master/wikis/en/HowToUse.md)
+[More...](https://github.com/pagehelper/Mybatis-PageHelper/blob/master/wikis/en/HowToUse.md)
 
 ## Documentation  
 - [How to use the PageHelper](https://github.com/pagehelper/Mybatis-PageHelper/blob/master/wikis/en/HowToUse.md)
@@ -86,8 +93,13 @@ If you are using Spring Boot, You can refer to [pagehelper-spring-boot-starter](
 - [Submit to github](https://github.com/pagehelper/Mybatis-PageHelper/issues/new)
 - [Submit to gitosc](http://git.oschina.net/free/Mybatis_PageHelper/issues/new?issue%5Bassignee_id%5D=&issue%5Bmilestone_id%5D=)
 
+## Thanks for free JetBrains Open Source license
+
+<a href="https://www.jetbrains.com/?from=Mybatis-PageHelper" target="_blank">
+<img src="https://user-images.githubusercontent.com/1787798/69898077-4f4e3d00-138f-11ea-81f9-96fb7c49da89.png" height="200"/></a>
+
 ## Author Info
-Web: http://www.mybatis.tk
+Web: https://mybatis.io
 
 Blog: http://blog.csdn.net/isea533
 

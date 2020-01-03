@@ -1,5 +1,139 @@
 ## 更新日志
 
+### 5.1.11 - 2019-11-26
+
+- 增加神通数据库的支持 **wangss**
+- Add support for HerdDB - support HerdDB, mostly like MySQL - auto detect HerdDB **Enrico Olivelli**
+- fix some typos and grammar issues **LHearen**
+
+### 5.1.10 - 2019-06-05
+
+在 *5.1.0 - 2017-08-28* 版本中，增加 `ReplaceSql` 接口用于处理 sqlServer 的 `with(nolock)` 问题，增加了针对性的 `replaceSql` 参数，
+可选值为 `simple` 和 `regex`，或者是实现了ReplaceSql接口的全限定类名。默认值为 `simple`，仍然使用原来的方式处理，
+新的 `regex` 会将如 `table with(nolock)` 处理为 `table_PAGEWITHNOLOCK`。
+
+本次更新仅仅是把默认值从 `simple` 改为了 `regex`，使用 `regex` 方式几乎能 100% 解决 sqlServer 的分页问题。
+
+下面是两个 issue 中的示例。
+
+#### 示例 SQL [#76](https://github.com/pagehelper/pagehelper-spring-boot/issues/76)
+
+原始 SQL：
+```sql
+SELECT *
+FROM
+forum_post_info a with(nolock)
+LEFT JOIN forum_carcase_tags as b with(nolock) on a.id = b.carcase_id where b.tag_id = 127
+```
+转换的 Count SQL：
+```sql
+SELECT COUNT(0)
+FROM forum_post_info a WITH (NOLOCK)
+	LEFT JOIN forum_carcase_tags b WITH (NOLOCK) ON a.id = b.carcase_id
+WHERE b.tag_id = 127
+```
+转换的分页 SQL：
+```sql
+SELECT TOP 10 *
+FROM (
+	SELECT ROW_NUMBER() OVER (ORDER BY RAND()) AS PAGE_ROW_NUMBER, *
+	FROM (
+		SELECT *
+		FROM forum_post_info a WITH (NOLOCK)
+			LEFT JOIN forum_carcase_tags b WITH (NOLOCK) ON a.id = b.carcase_id
+		WHERE b.tag_id = 127
+	) PAGE_TABLE_ALIAS
+) PAGE_TABLE_ALIAS
+WHERE PAGE_ROW_NUMBER > 1
+ORDER BY PAGE_ROW_NUMBER
+```
+
+#### 示例 SQL [#398](https://github.com/pagehelper/Mybatis-PageHelper/issues/398)
+
+原始 SQL：
+```sql
+Select AUS.ScheduleID, AUS.SystemID, AUS.ClinicID, AUS.DoctorID, AUS.ScheduleDate,
+	AUS.StartTime, AUS.EndTime, AUS.Status, AUS.BookBy, AUS.Note, AUS.Remark, AUS.SourceType, CM.CompanyName,
+	AU.UserName As DoctorName, AU.UserNumber As DoctorNumber, CC.CodeDesc As ClinicName, CD.Lat, CD.Lng,
+	CD.ContactTel, CD.Address, CR.ConsultationStatusID, CR.RegisterStatus,A1.CodeDesc as AreaLevel1, A2.CodeDesc as AreaLevel2
+	From ACM_User_Schedule AUS with(nolock)
+	Left Join Client_Register CR with(nolock) On AUS.BookBy=CR.ClientID And CR.SourceType='F' And AUS.ClientRegisterNum=CR.ClientRegisterNum
+	Inner Join ACM_User AU with(nolock) On AU.UserID = AUS.DoctorID
+	Inner Join Code_Clinic CC with(nolock) On AUS.ClinicID=CC.CodeID
+	Inner Join Clinic_Detail CD with(nolock) On CC.CodeID = CD.ClinicID
+	Inner Join Code_Area A1 with(nolock) On CD.AreaLevel1ID=A1.CodeID
+	Inner Join Code_Area A2 with(nolock) On CD.AreaLevel2ID=A2.CodeID
+	Inner Join Company_Master CM with(nolock) On CC.SystemID = CM.SystemID
+	Where BookBy=1
+```
+转换的 Count SQL：
+```sql
+SELECT COUNT(0)
+FROM ACM_User_Schedule AUS WITH (NOLOCK)
+	LEFT JOIN Client_Register CR WITH (NOLOCK)
+	ON AUS.BookBy = CR.ClientID
+		AND CR.SourceType = 'F'
+		AND AUS.ClientRegisterNum = CR.ClientRegisterNum
+	INNER JOIN ACM_User AU WITH (NOLOCK) ON AU.UserID = AUS.DoctorID
+	INNER JOIN Code_Clinic CC WITH (NOLOCK) ON AUS.ClinicID = CC.CodeID
+	INNER JOIN Clinic_Detail CD WITH (NOLOCK) ON CC.CodeID = CD.ClinicID
+	INNER JOIN Code_Area A1 WITH (NOLOCK) ON CD.AreaLevel1ID = A1.CodeID
+	INNER JOIN Code_Area A2 WITH (NOLOCK) ON CD.AreaLevel2ID = A2.CodeID
+	INNER JOIN Company_Master CM WITH (NOLOCK) ON CC.SystemID = CM.SystemID
+WHERE BookBy = 1
+```
+转换的分页 SQL：
+```sql
+SELECT TOP 10 ScheduleID, SystemID, ClinicID, DoctorID, ScheduleDate
+	, StartTime, EndTime, Status, BookBy, Note
+	, Remark, SourceType, CompanyName, DoctorName, DoctorNumber
+	, ClinicName, Lat, Lng, ContactTel, Address
+	, ConsultationStatusID, RegisterStatus, AreaLevel1, AreaLevel2
+FROM (
+	SELECT ROW_NUMBER() OVER (ORDER BY RAND()) AS PAGE_ROW_NUMBER, ScheduleID, SystemID, ClinicID, DoctorID
+		, ScheduleDate, StartTime, EndTime, Status, BookBy
+		, Note, Remark, SourceType, CompanyName, DoctorName
+		, DoctorNumber, ClinicName, Lat, Lng, ContactTel
+		, Address, ConsultationStatusID, RegisterStatus, AreaLevel1, AreaLevel2
+	FROM (
+		SELECT AUS.ScheduleID, AUS.SystemID, AUS.ClinicID, AUS.DoctorID, AUS.ScheduleDate
+			, AUS.StartTime, AUS.EndTime, AUS.Status, AUS.BookBy, AUS.Note
+			, AUS.Remark, AUS.SourceType, CM.CompanyName, AU.UserName AS DoctorName, AU.UserNumber AS DoctorNumber
+			, CC.CodeDesc AS ClinicName, CD.Lat, CD.Lng, CD.ContactTel, CD.Address
+			, CR.ConsultationStatusID, CR.RegisterStatus, A1.CodeDesc AS AreaLevel1, A2.CodeDesc AS AreaLevel2
+		FROM ACM_User_Schedule AUS WITH (NOLOCK)
+			LEFT JOIN Client_Register CR WITH (NOLOCK)
+			ON AUS.BookBy = CR.ClientID
+				AND CR.SourceType = 'F'
+				AND AUS.ClientRegisterNum = CR.ClientRegisterNum
+			INNER JOIN ACM_User AU WITH (NOLOCK) ON AU.UserID = AUS.DoctorID
+			INNER JOIN Code_Clinic CC WITH (NOLOCK) ON AUS.ClinicID = CC.CodeID
+			INNER JOIN Clinic_Detail CD WITH (NOLOCK) ON CC.CodeID = CD.ClinicID
+			INNER JOIN Code_Area A1 WITH (NOLOCK) ON CD.AreaLevel1ID = A1.CodeID
+			INNER JOIN Code_Area A2 WITH (NOLOCK) ON CD.AreaLevel2ID = A2.CodeID
+			INNER JOIN Company_Master CM WITH (NOLOCK) ON CC.SystemID = CM.SystemID
+		WHERE BookBy = 1
+	) PAGE_TABLE_ALIAS
+) PAGE_TABLE_ALIAS
+WHERE PAGE_ROW_NUMBER > 1
+ORDER BY PAGE_ROW_NUMBER
+```
+
+SQL 经过 https://tool.oschina.net/codeformat/sql 格式化。
+
+
+### 5.1.9 - 2019-05-29
+
+- 升级 jsqlparser 为 2.0，升级 mybatis 为 3.5.1，解决兼容性问题。
+- 完善分页逻辑判断，fixed #389
+- 解决 MetaObject 版本兼容性问题 fixed #349
+- 处理 order by 解析失败时输出警告日志，不在抛出异常
+- 解决三处可能会导致countColumn失效的问题 fixed #325
+- 解决 BIT_ 少的逗号 fixed #341
+- 处理文档中的失效链接 isea533
+- 文档示例错误，fixed #366
+- fixed #373 NPE 问题
+
 ### 5.1.8 - 2018-11-11
 
 - 解决 sqlserver 中 with(nolock) 的问题([#pr10](https://gitee.com/free/Mybatis_PageHelper/pulls/10)) by [lvshuyan](https://gitee.com/lvshuyan)
@@ -181,14 +315,14 @@ private static final Set<String> AGGREGATE_FUNCTIONS = new HashSet<String>(Array
 
 例如，如果存在下面两个查询：
 ```xml
-<select id="selectLeftjoin" resultType="com.github.pagehelper.model.Country">
-    select a.id,b.countryname,a.countrycode from country a
-    left join country b on a.id = b.id
+<select id="selectLeftjoin" resultType="com.github.pagehelper.model.User">
+    select a.id,b.name,a.py from user a
+    left join user b on a.id = b.id
     order by a.id
 </select>
 <select id="selectLeftjoin_COUNT" resultType="Long">
-    select count(distinct a.id) from country a
-    left join country b on a.id = b.id
+    select count(distinct a.id) from user a
+    left join user b on a.id = b.id
 </select>
 ```
 上面的 `countSuffix` 使用的默认值 `_COUNT`，分页插件会自动获取到 `selectLeftjoin_COUNT` 查询，这个查询需要自己保证结果数正确。
@@ -199,13 +333,13 @@ private static final Set<String> AGGREGATE_FUNCTIONS = new HashSet<String>(Array
 
 上面方法执行输出的部分日志如下：
 ```
-DEBUG [main] - ==>  Preparing: select count(distinct a.id) from country a left join country b on a.id = b.id 
+DEBUG [main] - ==>  Preparing: select count(distinct a.id) from user a left join user b on a.id = b.id
 DEBUG [main] - ==> Parameters: 
 TRACE [main] - <==    Columns: C1
 TRACE [main] - <==        Row: 183
 DEBUG [main] - <==      Total: 1
 DEBUG [main] - Cache Hit Ratio [com.github.pagehelper.mapper.CountryMapper]: 0.0
-DEBUG [main] - ==>  Preparing: select a.id,b.countryname,a.countrycode from country a left join country b on a.id = b.id order by a.id LIMIT 10 
+DEBUG [main] - ==>  Preparing: select a.id,b.name,a.py from user a left join user b on a.id = b.id order by a.id LIMIT 10
 DEBUG [main] - ==> Parameters: 
 TRACE [main] - <==    Columns: ID, COUNTRYNAME, COUNTRYCODE
 TRACE [main] - <==        Row: 1, Angola, AO
@@ -307,36 +441,36 @@ TRACE [main] - <==        Row: 3, Albania, AL
 
 ```java
 //jdk6,7用法，创建接口
-Page<Country> page = PageHelper.startPage(1, 10).setOrderBy("id desc").doSelectPage(new ISelect() {
+Page<User> page = PageHelper.startPage(1, 10).setOrderBy("id desc").doSelectPage(new ISelect() {
     @Override
     public void doSelect() {
-        countryMapper.selectGroupBy();
+        userMapper.selectGroupBy();
     }
 });
 //jdk8 lambda用法
-Page<Country> page = PageHelper.startPage(1, 10).setOrderBy("id desc").doSelectPage(()-> countryMapper.selectGroupBy());
+Page<User> page = PageHelper.startPage(1, 10).setOrderBy("id desc").doSelectPage(()-> userMapper.selectGroupBy());
 //为了说明可以链式使用，上面是单独setOrderBy("id desc")，也可以直接如下
-Page<Country> page = PageHelper.startPage(1, 10, "id desc").doSelectPage(()-> countryMapper.selectGroupBy());
+Page<User> page = PageHelper.startPage(1, 10, "id desc").doSelectPage(()-> userMapper.selectGroupBy());
 
 //也可以直接返回PageInfo，注意doSelectPageInfo方法和doSelectPage
 pageInfo = PageHelper.startPage(1, 10).setOrderBy("id desc").doSelectPageInfo(new ISelect() {
     @Override
     public void doSelect() {
-        countryMapper.selectGroupBy();
+        userMapper.selectGroupBy();
     }
 });
 //对应的lambda用法
-pageInfo = PageHelper.startPage(1, 10).setOrderBy("id desc").doSelectPageInfo(() -> countryMapper.selectGroupBy());
+pageInfo = PageHelper.startPage(1, 10).setOrderBy("id desc").doSelectPageInfo(() -> userMapper.selectGroupBy());
 
 //count查询，返回一个查询语句的count数
 long total = PageHelper.count(new ISelect() {
     @Override
     public void doSelect() {
-        countryMapper.selectLike(country);
+        userMapper.selectLike(user);
     }
 });
 //lambda
-total = PageHelper.count(()->countryMapper.selectLike(country));
+total = PageHelper.count(()->userMapper.selectLike(user));
 ```
 
 ### 4.0.3 - 2015-11-09：
@@ -427,7 +561,7 @@ total = PageHelper.count(()->countryMapper.selectLike(country));
    现在可以直接使用`Parser`，使用方法如下：
 
    ```java
-   String originalSql = "Select * from country o where id > 10 order by id desc ";
+   String originalSql = "Select * from user o where id > 10 order by id desc ";
 
    Parser parser = AbstractParser.newParser("mysql");
    //获取count查询sql

@@ -41,12 +41,12 @@ public class SqlTest {
     public void testSqlParser() throws JSQLParserException {
         CountSqlParser countSqlParser = new CountSqlParser();
         System.out.println(countSqlParser.getSmartCountSql("with " +
-                "cr as " +
-                "( " +
-                "    select CountryRegionCode from person.CountryRegion where Name like 'C%' order by name" +
-                ") " +
-                " " +
-                "select * from person.StateProvince where CountryRegionCode in (select * from cr)"));
+            "cr as " +
+            "( " +
+            "    select UserRegionCode from person.UserRegion where Name like 'C%' order by name" +
+            ") " +
+            " " +
+            "select * from person.StateProvince where UserRegionCode in (select * from cr)"));
 
         System.out.println(countSqlParser.getSmartCountSql("with cr as " +
                 " (select aaz093 from aa10 where aaa100 like 'AAB05%' order by aaz093 desc) " +
@@ -95,7 +95,7 @@ public class SqlTest {
     @Test
     public void testSqlParser2() throws JSQLParserException {
         CountSqlParser countSqlParser = new CountSqlParser();
-        System.out.println(countSqlParser.getSmartCountSql("select countryname,count(id) from country group by countryname"));
+        System.out.println(countSqlParser.getSmartCountSql("select name,count(id) from user group by name"));
     }
     @Test
     public void testSqlParser3() throws JSQLParserException {
@@ -129,5 +129,17 @@ public class SqlTest {
         sql = sql.replaceAll("\\s*(\\w*?)_PAGEWITHNOLOCK", " $1 WITH(NOLOCK)");
 
         System.out.println(sql);
+    }
+
+    @Test
+    public void testSql375() throws JSQLParserException {
+        CountSqlParser countSqlParser = new CountSqlParser();
+        System.out.println(countSqlParser.getSmartCountSql("SELECT IF(score >= 60, 'pass', 'failed') FROM tbl"));
+    }
+
+    @Test
+    public void testSql350() throws JSQLParserException {
+        CountSqlParser countSqlParser = new CountSqlParser();
+        System.out.println(countSqlParser.getSmartCountSql("select a,b,c from tb_test having a not null"));
     }
 }

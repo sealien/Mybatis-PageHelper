@@ -22,34 +22,35 @@
  * THE SOFTWARE.
  */
 
-package com.github.pagehelper.test.basic;
+package com.github.pagehelper.dialect.rowbounds;
 
-import com.github.pagehelper.Page;
-import com.github.pagehelper.PageHelper;
-import com.github.pagehelper.mapper.UserMapper;
-import com.github.pagehelper.model.User;
-import com.github.pagehelper.util.MybatisHelper;
-import org.apache.ibatis.session.SqlSession;
-import org.junit.Test;
+import com.github.pagehelper.dialect.AbstractRowBoundsDialect;
+import org.apache.ibatis.cache.CacheKey;
+import org.apache.ibatis.session.RowBounds;
 
-import java.util.List;
+/**
+ * HerdDB 基于 RowBounds 的分页
+ *
+ * @author Enrico Olivelli
+ */
+public class HerdDBRowBoundsDialect extends AbstractRowBoundsDialect {
 
-import static org.junit.Assert.assertEquals;
-
-public class TestDistinct {
-
-    @Test
-    public void test() {
-        SqlSession sqlSession = MybatisHelper.getSqlSession();
-        UserMapper userMapper = sqlSession.getMapper(UserMapper.class);
-        try {
-            //获取第1页，10条内容，默认查询总数count
-            PageHelper.startPage(1, 10);
-            List<User> list = userMapper.selectDistinct();
-            assertEquals(10, list.size());
-            assertEquals(58, ((Page<?>) list).getTotal());
-        } finally {
-            sqlSession.close();
+    @Override
+    public String getPageSql(String sql, RowBounds rowBounds, CacheKey pageKey) {
+        StringBuilder sqlBuilder = new StringBuilder(sql.length() + 14);
+        sqlBuilder.append(sql);
+        if (rowBounds.getOffset() == 0) {
+            sqlBuilder.append(" LIMIT ");
+            sqlBuilder.append(rowBounds.getLimit());
+        } else {
+            sqlBuilder.append(" LIMIT ");
+            sqlBuilder.append(rowBounds.getOffset());
+            sqlBuilder.append(",");
+            sqlBuilder.append(rowBounds.getLimit());
+            pageKey.update(rowBounds.getOffset());
         }
+        pageKey.update(rowBounds.getLimit());
+        return sqlBuilder.toString();
     }
+
 }

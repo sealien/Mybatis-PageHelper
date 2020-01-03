@@ -2,7 +2,6 @@
 
 [![Build Status](https://travis-ci.org/pagehelper/Mybatis-PageHelper.svg?branch=master)](https://travis-ci.org/pagehelper/Mybatis-PageHelper)
 [![Maven central](https://maven-badges.herokuapp.com/maven-central/com.github.pagehelper/pagehelper/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.pagehelper/pagehelper)
-[![Dependency Status](https://www.versioneye.com/user/projects/5932123f22f278003c5f851e/badge.svg?style=flat)](https://www.versioneye.com/user/projects/5932123f22f278003c5f851e)
 
 [English](https://github.com/pagehelper/Mybatis-PageHelper/blob/master/README.md)
 
@@ -34,20 +33,26 @@ GitHub项目：https://github.com/mybatis-book/book
 
 该插件目前支持以下数据库的<b>物理分页</b>:
 
- 1. `Oracle`
- 2. `Mysql`
- 3. `MariaDB`
- 4. `SQLite`
- 5. `Hsqldb`
- 6. `PostgreSQL`
- 7. `DB2`
- 8. `SqlServer(2005,2008)`
- 9. `Informix`
- 10. `H2`
- 11. `SqlServer2012`
- 12. `Derby`
- 13. `Phoenix`
- 
+1. `Oracle`
+2. `Mysql`
+3. `MariaDB`
+4. `SQLite`
+5. `Hsqldb`
+6. `PostgreSQL`
+7. `DB2`
+8. `SqlServer(2005,2008)`
+9. `Informix`
+10. `H2`
+11. `SqlServer2012`
+12. `Derby`
+13. `Phoenix`
+14. 达梦数据库(dm)
+15. 阿里云PPAS数据库
+16. 神通数据库
+17. HerdDB
+
+>这里的数据库列表更新不及时，详情看这里: [PageAutoDialect.java#L58](https://github.com/pagehelper/Mybatis-PageHelper/blob/master/src/main/java/com/github/pagehelper/page/PageAutoDialect.java#L58)
+
 ## 使用 [QueryInterceptor 规范](https://github.com/pagehelper/Mybatis-PageHelper/blob/master/src/main/java/com/github/pagehelper/QueryInterceptor.java) 
 [Executor 拦截器高级教程 - QueryInterceptor 规范](https://github.com/pagehelper/Mybatis-PageHelper/blob/master/wikis/zh/Interceptor.md)
 
@@ -56,7 +61,9 @@ GitHub项目：https://github.com/mybatis-book/book
 由于分页插件 5.0 版本和 4.2.x 实现完全不同，所以 master 分支为 5.x 版本，4.2 作为一个分支存在，如果有针对 4.2 的 PR，请注意提交到分支版本。
 
 ## 集成
-使用 PageHelper 你只需要在 classpath 中包含 [pagehelper-x.x.x.jar](http://repo1.maven.org/maven2/com/github/pagehelper/pagehelper/) 和 [jsqlparser-0.9.5.jar](http://repo1.maven.org/maven2/com/github/jsqlparser/jsqlparser/0.9.5/)。
+使用 PageHelper 你只需要在 classpath 中包含 [pagehelper-x.y.z.jar](http://repo1.maven.org/maven2/com/github/pagehelper/pagehelper/) 和 [jsqlparser-x.y.z.jar](http://repo1.maven.org/maven2/com/github/jsqlparser/jsqlparser/)。
+
+>pagehelper 和 jsqlparser 对应关系参考 pom.xml 中的依赖版本。
 
 如果你使用 Maven，你只需要在 pom.xml 中添加下面的依赖：
 ```xml  
@@ -87,15 +94,20 @@ GitHub项目：https://github.com/mybatis-book/book
 - [提交到 github](https://github.com/pagehelper/Mybatis-PageHelper/issues/new)
 - [提交到 gitosc](http://git.oschina.net/free/Mybatis_PageHelper/issues/new?issue%5Bassignee_id%5D=&issue%5Bmilestone_id%5D=)
 
+## 感谢 JetBrains 免费的开源授权
+
+<a href="https://www.jetbrains.com/?from=Mybatis-PageHelper" target="_blank">
+<img src="https://user-images.githubusercontent.com/1787798/69898077-4f4e3d00-138f-11ea-81f9-96fb7c49da89.png" height="200"/></a>
+
 ## 作者信息
 
-网站：http://www.mybatis.tk
+网站：https://mybatis.io
 
 作者博客：http://blog.csdn.net/isea533
 
 作者邮箱： abel533@gmail.com  
 
-如需加群，请通过 http://mybatis.tk 首页按钮加群。
+如需加群，请通过 http://mybatis.io 首页按钮加群。
 
 本项目在 github 的项目地址：https://github.com/pagehelper/Mybatis-PageHelper
 
